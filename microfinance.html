@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion MicroFinance</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #1557b0;
+            --success: #0f9d58;
+            --danger: #db4437;
+            --warning: #f4b400;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #202124;
+            --text-light: #5f6368;
+            --border: #dadce0;
+            --sidebar-bg: #1a2332;
+            --sidebar-text: #a4aec7;
+            --sidebar-active: #1a73e8;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; transition: transform 0.3s; }
+        .sidebar-header { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-header h1 { color: #fff; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+        .sidebar-header h1 .icon { font-size: 28px; }
+        .sidebar-header p { font-size: 12px; margin-top: 4px; opacity: 0.6; }
+        .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: var(--sidebar-text); text-decoration: none; font-size: 14px; transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-nav a:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .sidebar-nav a.active { background: rgba(26,115,232,0.15); color: var(--sidebar-active); border-left-color: var(--sidebar-active); }
+        .sidebar-nav a .nav-icon { width: 20px; text-align: center; font-size: 16px; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 12px; opacity: 0.4; }
+
+        /* Main Content */
+        .main { flex: 1; margin-left: 260px; display: flex; flex-direction: column; min-height: 100vh; }
+        .topbar { background: var(--card); padding: 16px 32px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+        .topbar h2 { font-size: 20px; font-weight: 600; }
+        .topbar-actions { display: flex; gap: 12px; align-items: center; }
+        .content { padding: 24px 32px; flex: 1; }
+
+        /* Buttons */
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #0b8043; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #c5221f; }
+        .btn-warning { background: var(--warning); color: #333; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { background: var(--bg); }
+        .btn-sm { padding: 6px 14px; font-size: 13px; }
+        .btn-icon { padding: 8px; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+
+        /* Cards */
+        .card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .card-header h3 { font-size: 16px; font-weight: 600; }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 24px; }
+        .stat-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); padding: 20px; display: flex; align-items: flex-start; gap: 16px; }
+        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .stat-icon.blue { background: #e8f0fe; color: var(--primary); }
+        .stat-icon.green { background: #e6f4ea; color: var(--success); }
+        .stat-icon.red { background: #fce8e6; color: var(--danger); }
+        .stat-icon.yellow { background: #fef7e0; color: #e37400; }
+        .stat-info h4 { font-size: 12px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-info .value { font-size: 28px; font-weight: 700; margin: 4px 0; }
+        .stat-info .change { font-size: 12px; }
+        .stat-info .change.up { color: var(--success); }
+        .stat-info .change.down { color: var(--danger); }
+
+        /* Tables */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { background: var(--bg); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); position: sticky; top: 0; }
+        tr:hover td { background: #f8f9fa; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; display: inline-block; }
+        .badge-active { background: #e6f4ea; color: var(--success); }
+        .badge-pending { background: #fef7e0; color: #e37400; }
+        .badge-completed { background: #e8f0fe; color: var(--primary); }
+        .badge-defaulted { background: #fce8e6; color: var(--danger); }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--card); border-radius: 16px; width: 90%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 18px; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-light); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: var(--bg); }
+        .modal-body { padding: 24px; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; }
+
+        /* Forms */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text-light); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,115,232,0.15); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        /* Search */
+        .search-box { position: relative; }
+        .search-box input { padding: 10px 14px 10px 38px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; width: 280px; }
+        .search-box input:focus { outline: none; border-color: var(--primary); }
+        .search-box::before { content: "\1F50D"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; }
+
+        /* Page Sections */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* Empty State */
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
+        .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state h3 { margin-bottom: 8px; color: var(--text); }
+
+        /* Progress Bar */
+        .progress-bar { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .progress-fill.green { background: var(--success); }
+        .progress-fill.blue { background: var(--primary); }
+        .progress-fill.yellow { background: var(--warning); }
+        .progress-fill.red { background: var(--danger); }
+
+        /* Actions */
+        .actions { display: flex; gap: 4px; }
+        .actions .btn-icon { background: transparent; border: none; cursor: pointer; color: var(--text-light); }
+        .actions .btn-icon:hover { background: var(--bg); color: var(--text); }
+
+        /* Toast */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { padding: 14px 20px; border-radius: 8px; color: #fff; font-size: 14px; animation: slideIn 0.3s ease; display: flex; align-items: center; gap: 10px; min-width: 280px; }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-info { background: var(--primary); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Chart placeholder */
+        .chart-container { padding: 20px; }
+        .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 200px; padding-top: 20px; }
+        .bar { flex: 1; border-radius: 4px 4px 0 0; transition: height 0.5s; position: relative; min-width: 30px; }
+        .bar:hover { opacity: 0.85; }
+        .bar-label { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--text-light); white-space: nowrap; }
+        .bar-value { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; }
+
+        /* Transactions timeline */
+        .timeline { position: relative; padding-left: 24px; }
+        .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+        .timeline-item { position: relative; padding-bottom: 20px; }
+        .timeline-item::before { content: ''; position: absolute; left: -20px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--primary); background: #fff; }
+        .timeline-item .time { font-size: 12px; color: var(--text-light); }
+        .timeline-item .desc { font-size: 14px; margin-top: 2px; }
+        .timeline-item .amount { font-weight: 600; font-size: 14px; }
+        .timeline-item .amount.credit { color: var(--success); }
+        .timeline-item .amount.debit { color: var(--danger); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; }
+            .content { padding: 16px; }
+            .topbar { padding: 12px 16px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .search-box input { width: 100%; }
+            .menu-toggle { display: block !important; }
+        }
+        .menu-toggle { display: none; background: none; border: none; font-size: 24px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1><span class="icon">🏦</span> MicroFinance</h1>
+            <p>Système de gestion</p>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="active" data-page="dashboard"><span class="nav-icon">📊</span> Tableau de bord</a>
+            <a href="#" data-page="clients"><span class="nav-icon">👥</span> Clients</a>
+            <a href="#" data-page="loans"><span class="nav-icon">💰</span> Prêts</a>
+            <a href="#" data-page="savings"><span class="nav-icon">🏦</span> Épargne</a>
+            <a href="#" data-page="transactions"><span class="nav-icon">📋</span> Transactions</a>
+            <a href="#" data-page="reports"><span class="nav-icon">📈</span> Rapports</a>
+        </nav>
+        <div class="sidebar-footer">© 2026 MicroFinance v1.0</div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main">
+        <header class="topbar">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h2 id="pageTitle">Tableau de bord</h2>
+            </div>
+            <div class="topbar-actions">
+                <span id="currentDate" style="font-size:13px;color:var(--text-light);"></span>
+            </div>
+        </header>
+
+        <div class="content">
+
+            <!-- Dashboard -->
+            <div class="page active" id="page-dashboard">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">👥</div>
+                        <div class="stat-info">
+                            <h4>Clients</h4>
+                            <div class="value" id="stat-clients">0</div>
+                            <div class="change up">Total enregistrés</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">💰</div>
+                        <div class="stat-info">
+                            <h4>Prêts Actifs</h4>
+                            <div class="value" id="stat-active-loans">0</div>
+                            <div class="change up">En cours</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">💵</div>
+                        <div class="stat-info">
+                            <h4>Montant Total Prêts</h4>
+                            <div class="value" id="stat-total-loans">0 F</div>
+                            <div class="change up">Encours total</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">📊</div>
+                        <div class="stat-info">
+                            <h4>Taux Remboursement</h4>
+                            <div class="value" id="stat-repayment-rate">0%</div>
+                            <div class="change up">Performance</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Prêts des 6 derniers mois</h3>
+                        </div>
+                        <div class="chart-container">
+                            <div class="bar-chart" id="loanChart"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Dernières transactions</h3>
+                        </div>
+                        <div class="timeline" id="recentTransactions"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clients -->
+            <div class="page" id="page-clients">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Liste des Clients</h3>
+                        <div style="display:flex;gap:12px;">
+                            <div class="search-box">
+                                <input type="text" id="searchClient" placeholder="Rechercher un client..." oninput="renderClients()">
+                            </div>
+                            <button class="btn btn-primary" onclick="openModal('clientModal')">+ Nouveau Client</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nom Complet</th>
+                                    <th>Téléphone</th>
+                                    <th>Adresse</th>
+                                    <th>Date inscription</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loans -->
+            <div class="page" id="page-loans">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Gestion des Prêts</h3>
+                        <div style="display:flex;gap:12px;">
+                            <div class="search-box">
+                                <input type="text" id="searchLoan" placeholder="Rechercher un prêt..." oninput="renderLoans()">
+                            </div>
+                            <button class="btn btn-primary" onclick="openModal('loanModal')">+ Nouveau Prêt</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Client</th>
+                                    <th>Montant</th>
+                                    <th>Taux (%)</th>
+                                    <th>Durée</th>
+                                    <th>Mensualité</th>
+                                    <th>Reste à payer</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loansTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Savings -->
+            <div class="page" id="page-savings">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Comptes d'Épargne</h3>
+                        <div style="display:flex;gap:12px;">
+                            <div class="search-box">
+                                <input type="text" id="searchSavings" placeholder="Rechercher..." oninput="renderSavings()">
+                            </div>
+                            <button class="btn btn-primary" onclick="openModal('savingsModal')">+ Nouveau Dépôt</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Client</th>
+                                    <th>Solde</th>
+                                    <th>Dépôt Total</th>
+                                    <th>Retrait Total</th>
+                                    <th>Dernière Activité</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="savingsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions -->
+            <div class="page" id="page-transactions">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Historique des Transactions</h3>
+                        <div style="display:flex;gap:12px;">
+                            <div class="search-box">
+                                <input type="text" id="searchTransaction" placeholder="Rechercher..." oninput="renderTransactions()">
+                            </div>
+                            <select id="filterTransType" onchange="renderTransactions()" style="padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;">
+                                <option value="">Tous les types</option>
+                                <option value="loan_disbursement">Déboursement prêt</option>
+                                <option value="loan_repayment">Remboursement prêt</option>
+                                <option value="savings_deposit">Dépôt épargne</option>
+                                <option value="savings_withdrawal">Retrait épargne</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Montant</th>
+                                    <th>Méthode</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports -->
+            <div class="page" id="page-reports">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon green">💵</div>
+                        <div class="stat-info">
+                            <h4>Total Épargne</h4>
+                            <div class="value" id="report-total-savings">0 F</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">💰</div>
+                        <div class="stat-info">
+                            <h4>Prêts Remboursés</h4>
+                            <div class="value" id="report-completed-loans">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon yellow">📊</div>
+                        <div class="stat-info">
+                            <h4>Revenus Intérêts</h4>
+                            <div class="value" id="report-interest">0 F</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon red">⚠️</div>
+                        <div class="stat-info">
+                            <h4>Prêts En Retard</h4>
+                            <div class="value" id="report-defaulted">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Répartition des Prêts</h3>
+                        </div>
+                        <div class="chart-container">
+                            <div class="bar-chart" id="reportLoanChart"></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Statistiques Clients</h3>
+                        </div>
+                        <div style="padding:20px;">
+                            <div class="form-group">
+                                <label>Hommes</label>
+                                <div class="progress-bar"><div class="progress-fill blue" id="report-men" style="width:0%"></div></div>
+                                <div style="font-size:13px;margin-top:4px;" id="report-men-count">0 clients</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Femmes</label>
+                                <div class="progress-bar"><div class="progress-fill red" id="report-women" style="width:0%"></div></div>
+                                <div style="font-size:13px;margin-top:4px;" id="report-women-count">0 clients</div>
+                            </div>
+                            <div class="form-group">
+                                <label>Entreprises</label>
+                                <div class="progress-bar"><div class="progress-fill green" id="report-business" style="width:0%"></div></div>
+                                <div style="font-size:13px;margin-top:4px;" id="report-business-count">0 clients</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modals -->
+
+    <!-- Client Modal -->
+    <div class="modal-overlay" id="clientModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="clientModalTitle">Nouveau Client</h3>
+                <button class="modal-close" onclick="closeModal('clientModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="clientId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prénom</label>
+                        <input type="text" id="clientFirstName" placeholder="Prénom">
+                    </div>
+                    <div class="form-group">
+                        <label>Nom</label>
+                        <input type="text" id="clientLastName" placeholder="Nom">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Téléphone</label>
+                        <input type="tel" id="clientPhone" placeholder="+243 ...">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="clientEmail" placeholder="email@exemple.com">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Adresse</label>
+                    <input type="text" id="clientAddress" placeholder="Adresse complète">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select id="clientType">
+                            <option value="individual">Individuel</option>
+                            <option value="business">Entreprise</option>
+                            <option value="group">Groupe</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Genre</label>
+                        <select id="clientGender">
+                            <option value="M">Masculin</option>
+                            <option value="F">Féminin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Pièce d'identité</label>
+                    <input type="text" id="clientIDNumber" placeholder="Numéro de pièce">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('clientModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="saveClient()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loan Modal -->
+    <div class="modal-overlay" id="loanModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="loanModalTitle">Nouveau Prêt</h3>
+                <button class="modal-close" onclick="closeModal('loanModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="loanId">
+                <div class="form-group">
+                    <label>Client</label>
+                    <select id="loanClient"></select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Montant (FC)</label>
+                        <input type="number" id="loanAmount" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Taux d'intérêt (%)</label>
+                        <input type="number" id="loanInterest" placeholder="0" min="0" max="100" step="0.5">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Durée (mois)</label>
+                        <input type="number" id="loanDuration" placeholder="12" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Date de début</label>
+                        <input type="date" id="loanStartDate">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Objet du prêt</label>
+                    <input type="text" id="loanPurpose" placeholder="Commerce, Agriculture, etc.">
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="loanNotes" rows="2" placeholder="Notes supplémentaires..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('loanModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="saveLoan()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Savings Modal -->
+    <div class="modal-overlay" id="savingsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="savingsModalTitle">Nouveau Dépôt</h3>
+                <button class="modal-close" onclick="closeModal('savingsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="savingsId">
+                <div class="form-group">
+                    <label>Client</label>
+                    <select id="savingsClient"></select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type d'opération</label>
+                        <select id="savingsType">
+                            <option value="deposit">Dépôt</option>
+                            <option value="withdrawal">Retrait</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Montant (FC)</label>
+                        <input type="number" id="savingsAmount" placeholder="0" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Méthode de paiement</label>
+                    <select id="savingsMethod">
+                        <option value="cash">Espèces</option>
+                        <option value="mobile">Mobile Money</option>
+                        <option value="bank">Virement bancaire</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('savingsModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="saveSavingsTransaction()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repayment Modal -->
+    <div class="modal-overlay" id="repaymentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Enregistrer un Remboursement</h3>
+                <button class="modal-close" onclick="closeModal('repaymentModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="repayLoanId">
+                <div class="form-group">
+                    <label>Client</label>
+                    <input type="text" id="repayClientName" readonly style="background:var(--bg);">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Montant restant</label>
+                        <input type="text" id="repayRemaining" readonly style="background:var(--bg);">
+                    </div>
+                    <div class="form-group">
+                        <label>Montant à payer (FC)</label>
+                        <input type="number" id="repayAmount" placeholder="0" min="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Méthode de paiement</label>
+                    <select id="repayMethod">
+                        <option value="cash">Espèces</option>
+                        <option value="mobile">Mobile Money</option>
+                        <option value="bank">Virement bancaire</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('repaymentModal')">Annuler</button>
+                <button class="btn btn-success" onclick="saveRepayment()">Confirmer le paiement</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ==================== DATA STORE ====================
+        let data = {
+            clients: JSON.parse(localStorage.getItem('mf_clients') || '[]'),
+            loans: JSON.parse(localStorage.getItem('mf_loans') || '[]'),
+            transactions: JSON.parse(localStorage.getItem('mf_transactions') || '[]'),
+            savingsAccounts: JSON.parse(localStorage.getItem('mf_savings') || '{}')
+        };
+
+        function save() {
+            localStorage.setItem('mf_clients', JSON.stringify(data.clients));
+            localStorage.setItem('mf_loans', JSON.stringify(data.loans));
+            localStorage.setItem('mf_transactions', JSON.stringify(data.transactions));
+            localStorage.setItem('mf_savings', JSON.stringify(data.savingsAccounts));
+        }
+
+        function genId(prefix) {
+            return prefix + '-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 3).toUpperCase();
+        }
+
+        function formatMoney(n) {
+            return Number(n).toLocaleString('fr-FR') + ' F';
+        }
+
+        function formatDate(d) {
+            return new Date(d).toLocaleDateString('fr-FR');
+        }
+
+        function getClientName(id) {
+            const c = data.clients.find(cl => cl.id === id);
+            return c ? c.firstName + ' ' + c.lastName : 'Inconnu';
+        }
+
+        // ==================== TOAST ====================
+        function showToast(msg, type = 'success') {
+            const t = document.createElement('div');
+            t.className = 'toast toast-' + type;
+            t.textContent = msg;
+            document.getElementById('toastContainer').appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        }
+
+        // ==================== NAVIGATION ====================
+        document.querySelectorAll('.sidebar-nav a').forEach(a => {
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const page = a.dataset.page;
+                document.querySelectorAll('.sidebar-nav a').forEach(x => x.classList.remove('active'));
+                a.classList.add('active');
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById('page-' + page).classList.add('active');
+                document.getElementById('pageTitle').textContent = a.textContent.trim();
+                if (page === 'dashboard') refreshDashboard();
+                if (page === 'reports') refreshReports();
+            });
+        });
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // ==================== MODALS ====================
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        document.querySelectorAll('.modal-overlay').forEach(m => {
+            m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
+        });
+
+        // ==================== CLIENTS ====================
+        function renderClients() {
+            const search = (document.getElementById('searchClient').value || '').toLowerCase();
+            const filtered = data.clients.filter(c =>
+                (c.firstName + ' ' + c.lastName).toLowerCase().includes(search) ||
+                c.phone.includes(search) ||
+                (c.email || '').toLowerCase().includes(search)
+            );
+            const tbody = document.getElementById('clientsTable');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">👥</div><h3>Aucun client</h3><p>Ajoutez votre premier client pour commencer.</p></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(c => `
+                <tr>
+                    <td><strong>${c.id}</strong></td>
+                    <td>${c.firstName} ${c.lastName}</td>
+                    <td>${c.phone}</td>
+                    <td>${c.address || '-'}</td>
+                    <td>${formatDate(c.createdAt)}</td>
+                    <td><span class="badge badge-active">Actif</span></td>
+                    <td class="actions">
+                        <button class="btn-icon" onclick="editClient('${c.id}')" title="Modifier">✏️</button>
+                        <button class="btn-icon" onclick="deleteClient('${c.id}')" title="Supprimer">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function saveClient() {
+            const id = document.getElementById('clientId').value;
+            const client = {
+                id: id || genId('CLT'),
+                firstName: document.getElementById('clientFirstName').value.trim(),
+                lastName: document.getElementById('clientLastName').value.trim(),
+                phone: document.getElementById('clientPhone').value.trim(),
+                email: document.getElementById('clientEmail').value.trim(),
+                address: document.getElementById('clientAddress').value.trim(),
+                type: document.getElementById('clientType').value,
+                gender: document.getElementById('clientGender').value,
+                idNumber: document.getElementById('clientIDNumber').value.trim(),
+                createdAt: id ? (data.clients.find(c => c.id === id)?.createdAt || new Date().toISOString()) : new Date().toISOString()
+            };
+            if (!client.firstName || !client.lastName) { showToast('Veuillez remplir le nom et prénom', 'error'); return; }
+            if (id) {
+                const idx = data.clients.findIndex(c => c.id === id);
+                if (idx >= 0) data.clients[idx] = client;
+            } else {
+                data.clients.push(client);
+            }
+            save();
+            closeModal('clientModal');
+            clearClientForm();
+            renderClients();
+            showToast(id ? 'Client modifié' : 'Client ajouté avec succès');
+        }
+
+        function editClient(id) {
+            const c = data.clients.find(x => x.id === id);
+            if (!c) return;
+            document.getElementById('clientId').value = c.id;
+            document.getElementById('clientFirstName').value = c.firstName;
+            document.getElementById('clientLastName').value = c.lastName;
+            document.getElementById('clientPhone').value = c.phone;
+            document.getElementById('clientEmail').value = c.email || '';
+            document.getElementById('clientAddress').value = c.address || '';
+            document.getElementById('clientType').value = c.type || 'individual';
+            document.getElementById('clientGender').value = c.gender || 'M';
+            document.getElementById('clientIDNumber').value = c.idNumber || '';
+            document.getElementById('clientModalTitle').textContent = 'Modifier Client';
+            openModal('clientModal');
+        }
+
+        function deleteClient(id) {
+            if (!confirm('Supprimer ce client ?')) return;
+            data.clients = data.clients.filter(c => c.id !== id);
+            save();
+            renderClients();
+            showToast('Client supprimé');
+        }
+
+        function clearClientForm() {
+            document.getElementById('clientId').value = '';
+            document.getElementById('clientFirstName').value = '';
+            document.getElementById('clientLastName').value = '';
+            document.getElementById('clientPhone').value = '';
+            document.getElementById('clientEmail').value = '';
+            document.getElementById('clientAddress').value = '';
+            document.getElementById('clientType').value = 'individual';
+            document.getElementById('clientGender').value = 'M';
+            document.getElementById('clientIDNumber').value = '';
+            document.getElementById('clientModalTitle').textContent = 'Nouveau Client';
+        }
+
+        // ==================== LOANS ====================
+        function calculateMonthlyPayment(amount, rate, months) {
+            if (rate === 0) return amount / months;
+            const r = rate / 100 / 12;
+            return amount * (r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
+        }
+
+        function populateClientSelect() {
+            const options = data.clients.map(c => `<option value="${c.id}">${c.firstName} ${c.lastName}</option>`).join('');
+            const html = '<option value="">-- Sélectionner un client --</option>' + options;
+            document.getElementById('loanClient').innerHTML = html;
+            document.getElementById('savingsClient').innerHTML = html;
+        }
+
+        function renderLoans() {
+            const search = (document.getElementById('searchLoan').value || '').toLowerCase();
+            const filtered = data.loans.filter(l =>
+                getClientName(l.clientId).toLowerCase().includes(search) ||
+                l.id.toLowerCase().includes(search)
+            );
+            const tbody = document.getElementById('loansTable');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="icon">💰</div><h3>Aucun prêt</h3><p>Créez un nouveau prêt pour un client.</p></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(l => {
+                const monthly = calculateMonthlyPayment(l.amount, l.interest, l.duration);
+                const statusClass = l.status === 'active' ? 'badge-active' : l.status === 'completed' ? 'badge-completed' : l.status === 'defaulted' ? 'badge-defaulted' : 'badge-pending';
+                const statusText = l.status === 'active' ? 'Actif' : l.status === 'completed' ? 'Terminé' : l.status === 'defaulted' ? 'En retard' : 'En attente';
+                return `
+                <tr>
+                    <td><strong>${l.id}</strong></td>
+                    <td>${getClientName(l.clientId)}</td>
+                    <td>${formatMoney(l.amount)}</td>
+                    <td>${l.interest}%</td>
+                    <td>${l.duration} mois</td>
+                    <td>${formatMoney(monthly.toFixed(0))}</td>
+                    <td><strong>${formatMoney(l.remaining.toFixed(0))}</strong></td>
+                    <td><span class="badge ${statusClass}">${statusText}</span></td>
+                    <td class="actions">
+                        ${l.status === 'active' ? `<button class="btn-icon" onclick="openRepayment('${l.id}')" title="Rembourser">💵</button>` : ''}
+                        <button class="btn-icon" onclick="editLoan('${l.id}')" title="Modifier">✏️</button>
+                        <button class="btn-icon" onclick="deleteLoan('${l.id}')" title="Supprimer">🗑️</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function saveLoan() {
+            const id = document.getElementById('loanId').value;
+            const clientId = document.getElementById('loanClient').value;
+            const amount = parseFloat(document.getElementById('loanAmount').value);
+            const interest = parseFloat(document.getElementById('loanInterest').value) || 0;
+            const duration = parseInt(document.getElementById('loanDuration').value);
+            const startDate = document.getElementById('loanStartDate').value;
+            const purpose = document.getElementById('loanPurpose').value.trim();
+            const notes = document.getElementById('loanNotes').value.trim();
+
+            if (!clientId) { showToast('Sélectionnez un client', 'error'); return; }
+            if (!amount || amount <= 0) { showToast('Montant invalide', 'error'); return; }
+            if (!duration || duration <= 0) { showToast('Durée invalide', 'error'); return; }
+            if (!startDate) { showToast('Choisissez une date', 'error'); return; }
+
+            const monthly = calculateMonthlyPayment(amount, interest, duration);
+            const loan = {
+                id: id || genId('PRT'),
+                clientId,
+                amount,
+                interest,
+                duration,
+                startDate,
+                purpose,
+                notes,
+                remaining: amount,
+                monthlyPayment: monthly,
+                status: 'active',
+                createdAt: id ? (data.loans.find(l => l.id === id)?.createdAt || new Date().toISOString()) : new Date().toISOString()
+            };
+
+            if (id) {
+                const idx = data.loans.findIndex(l => l.id === id);
+                if (idx >= 0) data.loans[idx] = loan;
+            } else {
+                data.loans.push(loan);
+                data.transactions.push({
+                    id: genId('TXN'),
+                    type: 'loan_disbursement',
+                    description: 'Déboursement prêt ' + loan.id + ' - ' + getClientName(clientId),
+                    amount: amount,
+                    date: new Date().toISOString(),
+                    clientId,
+                    loanId: loan.id,
+                    method: 'cash'
+                });
+            }
+            save();
+            closeModal('loanModal');
+            clearLoanForm();
+            renderLoans();
+            showToast(id ? 'Prêt modifié' : 'Prêt enregistré avec succès');
+        }
+
+        function editLoan(id) {
+            const l = data.loans.find(x => x.id === id);
+            if (!l) return;
+            document.getElementById('loanId').value = l.id;
+            document.getElementById('loanAmount').value = l.amount;
+            document.getElementById('loanInterest').value = l.interest;
+            document.getElementById('loanDuration').value = l.duration;
+            document.getElementById('loanStartDate').value = l.startDate;
+            document.getElementById('loanPurpose').value = l.purpose || '';
+            document.getElementById('loanNotes').value = l.notes || '';
+            document.getElementById('loanModalTitle').textContent = 'Modifier Prêt';
+            populateClientSelect();
+            document.getElementById('loanClient').value = l.clientId;
+            openModal('loanModal');
+        }
+
+        function deleteLoan(id) {
+            if (!confirm('Supprimer ce prêt ?')) return;
+            data.loans = data.loans.filter(l => l.id !== id);
+            save();
+            renderLoans();
+            showToast('Prêt supprimé');
+        }
+
+        function clearLoanForm() {
+            document.getElementById('loanId').value = '';
+            document.getElementById('loanClient').value = '';
+            document.getElementById('loanAmount').value = '';
+            document.getElementById('loanInterest').value = '';
+            document.getElementById('loanDuration').value = '';
+            document.getElementById('loanStartDate').value = '';
+            document.getElementById('loanPurpose').value = '';
+            document.getElementById('loanNotes').value = '';
+            document.getElementById('loanModalTitle').textContent = 'Nouveau Prêt';
+        }
+
+        // ==================== REPAYMENT ====================
+        function openRepayment(loanId) {
+            const l = data.loans.find(x => x.id === loanId);
+            if (!l) return;
+            document.getElementById('repayLoanId').value = l.id;
+            document.getElementById('repayClientName').value = getClientName(l.clientId);
+            document.getElementById('repayRemaining').value = formatMoney(l.remaining.toFixed(0));
+            document.getElementById('repayAmount').value = '';
+            openModal('repaymentModal');
+        }
+
+        function saveRepayment() {
+            const loanId = document.getElementById('repayLoanId').value;
+            const amount = parseFloat(document.getElementById('repayAmount').value);
+            const method = document.getElementById('repayMethod').value;
+            const loan = data.loans.find(l => l.id === loanId);
+            if (!loan || !amount || amount <= 0) { showToast('Montant invalide', 'error'); return; }
+            if (amount > loan.remaining) { showToast('Le montant dépasse le reste à payer', 'error'); return; }
+
+            loan.remaining = Math.max(0, loan.remaining - amount);
+            if (loan.remaining <= 0) loan.status = 'completed';
+
+            data.transactions.push({
+                id: genId('TXN'),
+                type: 'loan_repayment',
+                description: 'Remboursement prêt ' + loanId + ' - ' + getClientName(loan.clientId),
+                amount,
+                date: new Date().toISOString(),
+                clientId: loan.clientId,
+                loanId,
+                method
+            });
+            save();
+            closeModal('repaymentModal');
+            renderLoans();
+            showToast('Remboursement enregistré');
+        }
+
+        // ==================== SAVINGS ====================
+        function getSavingsAccount(clientId) {
+            if (!data.savingsAccounts[clientId]) {
+                data.savingsAccounts[clientId] = { balance: 0, totalDeposit: 0, totalWithdrawal: 0, lastActivity: new Date().toISOString() };
+            }
+            return data.savingsAccounts[clientId];
+        }
+
+        function renderSavings() {
+            const search = (document.getElementById('searchSavings').value || '').toLowerCase();
+            const tbody = document.getElementById('savingsTable');
+            const accounts = Object.entries(data.savingsAccounts).filter(([clientId, acc]) =>
+                getClientName(clientId).toLowerCase().includes(search) || clientId.toLowerCase().includes(search)
+            );
+            if (accounts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">🏦</div><h3>Aucun compte épargne</h3><p>Commencez par effectuer un dépôt.</p></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = accounts.map(([clientId, acc]) => `
+                <tr>
+                    <td><strong>${clientId}</strong></td>
+                    <td>${getClientName(clientId)}</td>
+                    <td><strong style="color:var(--success)">${formatMoney(acc.balance)}</strong></td>
+                    <td>${formatMoney(acc.totalDeposit)}</td>
+                    <td>${formatMoney(acc.totalWithdrawal)}</td>
+                    <td>${formatDate(acc.lastActivity)}</td>
+                    <td class="actions">
+                        <button class="btn btn-sm btn-success" onclick="quickDeposit('${clientId}')">Dépôt</button>
+                        <button class="btn btn-sm btn-outline" onclick="quickWithdraw('${clientId}')">Retrait</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function saveSavingsTransaction() {
+            const clientId = document.getElementById('savingsClient').value;
+            const type = document.getElementById('savingsType').value;
+            const amount = parseFloat(document.getElementById('savingsAmount').value);
+            const method = document.getElementById('savingsMethod').value;
+
+            if (!clientId) { showToast('Sélectionnez un client', 'error'); return; }
+            if (!amount || amount <= 0) { showToast('Montant invalide', 'error'); return; }
+
+            const acc = getSavingsAccount(clientId);
+            if (type === 'withdrawal' && amount > acc.balance) { showToast('Solde insuffisant', 'error'); return; }
+
+            if (type === 'deposit') {
+                acc.balance += amount;
+                acc.totalDeposit += amount;
+            } else {
+                acc.balance -= amount;
+                acc.totalWithdrawal += amount;
+            }
+            acc.lastActivity = new Date().toISOString();
+
+            data.transactions.push({
+                id: genId('TXN'),
+                type: type === 'deposit' ? 'savings_deposit' : 'savings_withdrawal',
+                description: (type === 'deposit' ? 'Dépôt épargne' : 'Retrait épargne') + ' - ' + getClientName(clientId),
+                amount,
+                date: new Date().toISOString(),
+                clientId,
+                method
+            });
+            save();
+            closeModal('savingsModal');
+            document.getElementById('savingsAmount').value = '';
+            renderSavings();
+            showToast(type === 'deposit' ? 'Dépôt enregistré' : 'Retrait effectué');
+        }
+
+        function quickDeposit(clientId) {
+            populateClientSelect();
+            document.getElementById('savingsClient').value = clientId;
+            document.getElementById('savingsType').value = 'deposit';
+            document.getElementById('savingsAmount').value = '';
+            document.getElementById('savingsModalTitle').textContent = 'Dépôt Épargne';
+            openModal('savingsModal');
+        }
+
+        function quickWithdraw(clientId) {
+            populateClientSelect();
+            document.getElementById('savingsClient').value = clientId;
+            document.getElementById('savingsType').value = 'withdrawal';
+            document.getElementById('savingsAmount').value = '';
+            document.getElementById('savingsModalTitle').textContent = 'Retrait Épargne';
+            openModal('savingsModal');
+        }
+
+        // ==================== TRANSACTIONS ====================
+        function renderTransactions() {
+            const search = (document.getElementById('searchTransaction').value || '').toLowerCase();
+            const filterType = document.getElementById('filterTransType').value;
+            let filtered = data.transactions.filter(t => {
+                if (filterType && t.type !== filterType) return false;
+                return t.description.toLowerCase().includes(search) || t.id.toLowerCase().includes(search);
+            });
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const typeLabels = {
+                loan_disbursement: 'Déboursement',
+                loan_repayment: 'Remboursement',
+                savings_deposit: 'Dépôt épargne',
+                savings_withdrawal: 'Retrait épargne'
+            };
+            const methodLabels = { cash: 'Espèces', mobile: 'Mobile Money', bank: 'Virement' };
+
+            const tbody = document.getElementById('transactionsTable');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📋</div><h3>Aucune transaction</h3></div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = filtered.map(t => `
+                <tr>
+                    <td><strong>${t.id}</strong></td>
+                    <td>${formatDate(t.date)}</td>
+                    <td><span class="badge ${t.type.includes('disbursement') || t.type.includes('withdrawal') ? 'badge-defaulted' : 'badge-active'}">${typeLabels[t.type] || t.type}</span></td>
+                    <td>${t.description}</td>
+                    <td><strong class="${t.type.includes('repayment') || t.type.includes('deposit') ? '' : ''}" style="color:${t.type.includes('repayment') || t.type.includes('deposit') ? 'var(--success)' : 'var(--danger)'}">${formatMoney(t.amount)}</strong></td>
+                    <td>${methodLabels[t.method] || t.method || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ==================== DASHBOARD ====================
+        function refreshDashboard() {
+            document.getElementById('stat-clients').textContent = data.clients.length;
+            const activeLoans = data.loans.filter(l => l.status === 'active');
+            document.getElementById('stat-active-loans').textContent = activeLoans.length;
+            const totalLoanAmount = activeLoans.reduce((s, l) => s + l.remaining, 0);
+            document.getElementById('stat-total-loans').textContent = formatMoney(totalLoanAmount.toFixed(0));
+            const completed = data.loans.filter(l => l.status === 'completed').length;
+            const total = data.loans.length;
+            const rate = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
+            document.getElementById('stat-repayment-rate').textContent = rate + '%';
+
+            // Chart
+            const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+            const now = new Date();
+            const chartData = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const m = d.getMonth();
+                const y = d.getFullYear();
+                const count = data.loans.filter(l => {
+                    const ld = new Date(l.startDate);
+                    return ld.getMonth() === m && ld.getFullYear() === y;
+                }).length;
+                chartData.push({ label: months[m], value: count });
+            }
+            const maxVal = Math.max(...chartData.map(d => d.value), 1);
+            document.getElementById('loanChart').innerHTML = chartData.map(d => {
+                const h = (d.value / maxVal) * 100;
+                return `<div class="bar" style="height:${Math.max(h, 5)}%;background:var(--primary);">
+                    <span class="bar-value">${d.value}</span>
+                    <span class="bar-label">${d.label}</span>
+                </div>`;
+            }).join('');
+
+            // Recent transactions
+            const recent = [...data.transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+            const rt = document.getElementById('recentTransactions');
+            if (recent.length === 0) {
+                rt.innerHTML = '<div class="empty-state"><p>Aucune transaction récente</p></div>';
+            } else {
+                rt.innerHTML = recent.map(t => {
+                    const isCredit = t.type.includes('repayment') || t.type.includes('deposit');
+                    return `
+                    <div class="timeline-item">
+                        <div class="time">${formatDate(t.date)}</div>
+                        <div class="desc">${t.description}</div>
+                        <div class="amount ${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '-'}${formatMoney(t.amount)}</div>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        // ==================== REPORTS ====================
+        function refreshReports() {
+            const totalSavings = Object.values(data.savingsAccounts).reduce((s, a) => s + a.balance, 0);
+            document.getElementById('report-total-savings').textContent = formatMoney(totalSavings.toFixed(0));
+            document.getElementById('report-completed-loans').textContent = data.loans.filter(l => l.status === 'completed').length;
+
+            const totalInterest = data.loans.reduce((s, l) => s + (l.amount * l.interest / 100 * l.duration / 12), 0);
+            document.getElementById('report-interest').textContent = formatMoney(totalInterest.toFixed(0));
+            document.getElementById('report-defaulted').textContent = data.loans.filter(l => l.status === 'defaulted').length;
+
+            const men = data.clients.filter(c => c.gender === 'M').length;
+            const women = data.clients.filter(c => c.gender === 'F').length;
+            const businesses = data.clients.filter(c => c.type === 'business').length;
+            const total = data.clients.length || 1;
+
+            document.getElementById('report-men').style.width = ((men / total) * 100) + '%';
+            document.getElementById('report-women').style.width = ((women / total) * 100) + '%';
+            document.getElementById('report-business').style.width = ((businesses / total) * 100) + '%';
+            document.getElementById('report-men-count').textContent = men + ' clients';
+            document.getElementById('report-women-count').textContent = women + ' clients';
+            document.getElementById('report-business-count').textContent = businesses + ' entreprises';
+
+            // Loan status chart
+            const statuses = ['active', 'completed', 'defaulted'];
+            const statusLabels = { active: 'Actifs', completed: 'Terminés', defaulted: 'En retard' };
+            const statusColors = { active: 'var(--primary)', completed: 'var(--success)', defaulted: 'var(--danger)' };
+            const statusData = statuses.map(s => ({ label: statusLabels[s], value: data.loans.filter(l => l.status === s).length, color: statusColors[s] }));
+            const maxS = Math.max(...statusData.map(d => d.value), 1);
+            document.getElementById('reportLoanChart').innerHTML = statusData.map(d => {
+                const h = (d.value / maxS) * 100;
+                return `<div class="bar" style="height:${Math.max(h, 5)}%;background:${d.color};">
+                    <span class="bar-value">${d.value}</span>
+                    <span class="bar-label">${d.label}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // ==================== INIT ====================
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('loanStartDate').valueAsDate = new Date();
+        renderClients();
+        renderLoans();
+        renderSavings();
+        renderTransactions();
+        refreshDashboard();
+    </script>
+</body>
+</html>
